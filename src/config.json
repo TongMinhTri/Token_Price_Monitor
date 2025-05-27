@@ -1,0 +1,20 @@
+{
+    "rpc_url": "http://192.168.1.58:8545",
+    "mongo_url": "mongodb://192.168.1.58:27018/",
+    "database_name": "bsc_pools",
+    "collection_name": "token_prices",
+    "token_pairs": {
+    "ZKJ-USDT": {
+        "pool_address": "0x5968FEACbA91D55010975E0CFe8ACfc32664ad33",
+        "pool_type": "v3",
+        "token0_address": "0xC71B5F631354BE6853eFe9C3Ab6b9590F8302e81",
+        "token1_address": "0x55d398326f99059fF775485246999027B3197955"
+    },
+    "ZKJ-USDC": {
+        "pool_address": "0x08a10Ae012dF633aBBf710ef8BD3a9745A9e5816",
+        "pool_type": "v3",
+        "token0_address": "0xC71B5F631354BE6853eFe9C3Ab6b9590F8302e81",
+        "token1_address": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"
+        }
+    }
+}

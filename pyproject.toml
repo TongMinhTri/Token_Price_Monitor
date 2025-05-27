@@ -1,0 +1,26 @@
+[project]
+name = "practice"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Tong Minh Tri",email = "tongminhtricsptin@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10,<4.0"
+dependencies = [
+    "web3 (>=7.11.1,<8.0.0)",
+    "pymongo (>=4.13.0,<5.0.0)",
+    "matplotlib (>=3.10.3,<4.0.0)",
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+packages = [{ include = "price_monitor", from = "src" }]
+
+[tool.poetry.scripts]
+monitor = "price_monitor.main:main"
+plot = "price_monitor.plot_price:main"
+
