@@ -101,7 +101,7 @@ def build_deviation_df(p1, p2):
     docs2 = list(price_col.find({"pair_name": p2}))
 
     if not docs1 or not docs2:
-        print("⚠️ No data for one of the pairs.")
+        print("No data for one of the pairs.")
         return None
 
     df1 = pd.DataFrame([(d["block_number"], d["timestamp"], d["price_token1_in_token0"])
@@ -113,6 +113,7 @@ def build_deviation_df(p1, p2):
     df["timestamp"] = pd.to_datetime(df["timestamp"])
     df["deviation_pct"] = 100 * \
         abs(df["price1"] - df["price2"]) / ((df["price1"] + df["price2"]) / 2)
+    df = df.sort_values(by="block_number")
     return df
 
 
@@ -124,14 +125,17 @@ def plot_deviation(df: pd.DataFrame, key: str):
     plt.ylabel("Deviation (%)")
     plt.title(f"Price Deviation by {key.title()}")
     if key == "timestamp":
-        plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
+        ax = plt.gca()
+        ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d %H:%M:%S"))
         plt.xticks(rotation=30, ha="right")
+        plt.gcf().autofmt_xdate()
     plt.grid(True)
     plt.tight_layout()
     fname = f"{args.pair[0]}_{args.pair[1]}_deviation_by_{key}.png".replace(
         "/", "_")
     plt.savefig(os.path.join(OUTPUT_DIR, fname))
-    print(f"📈 Deviation chart saved to {fname}")
+    print(f"Deviation chart saved to {fname}")
     plt.close()
 
 

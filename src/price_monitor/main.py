@@ -7,6 +7,19 @@ import json
 from datetime import datetime
 import time
 import argparse
+from prometheus_client import start_http_server, Gauge
+
+# Start Prometheus metrics sever on port 8000
+start_http_server(8000)
+
+# Define metrics
+PRICE_GAUGE = Gauge('token_price', 'Token price by pair and direciton', [
+                    'pair_name', 'direction'])
+DEVIATION_GAUGE = Gauge(
+    "price_deviation_pct",
+    "Price deviation percentage between two token pairs",
+    ["pair"]
+)
 
 
 # Load configuration from config.json
@@ -104,7 +117,7 @@ POOL_V3_ABI = [
 ]
 
 
-def calculate_price_v2(pool_contract, block_number, token0_address, token1_address):
+def calculate_price_v2(pool_contract, block_number, token0_address):
     reserves = pool_contract.functions.getReserves().call(block_identifier=block_number)
     reserve0, reserve1, _ = reserves
 
@@ -120,7 +133,7 @@ def calculate_price_v2(pool_contract, block_number, token0_address, token1_addre
     return price_token0_in_token1, price_token1_in_token0
 
 
-def calculate_price_v3(pool_contract, block_number, token0_address, token1_address):
+def calculate_price_v3(pool_contract, block_number, token0_address):
 
     slot0 = pool_contract.functions.slot0().call(block_identifier=block_number)
     sqrt_price_x96 = slot0[0]
@@ -153,62 +166,104 @@ def get_token_symbol(token_address):
 
 
 def monitor_token_prices(from_block, to_block, pair_names: list[str]):
-
-    current_block = w3.eth.block_number
-
-    while True:
-
-        if to_block is not None and current_block == to_block:
-            logger.info(
-                f"Reached target block {to_block}. Monitoring complete.")
-            break
-        if from_block is None:
-            from_block = current_block
-
-        for block_num in range(from_block - 1, current_block + 1):
+    def process_block(block_num: int):
+        try:
             block = w3.eth.get_block(block_num)
-            logger.info(f"Processing block {block_num}")
-            for pair_name in pair_names:
-                token_pair = config["token_pairs"][pair_name]
+        except Exception as e:
+            logger.warning(f"Could not fetch block {block_num}: {e}")
+            return
 
-                pool_address = token_pair["pool_address"]
-                pool_type = token_pair["pool_type"]
-                token0_address = token_pair["token0_address"]
-                token1_address = token_pair["token1_address"]
+        logger.info(f"Processing block {block_num}")
 
-                contract = w3.eth.contract(
-                    address=Web3.to_checksum_address(pool_address),
-                    abi=POOL_V2_ABI if pool_type == "v2" else POOL_V3_ABI
-                )
-                pool_token0 = contract.functions.token0().call()
-                token0_symbol = get_token_symbol(pool_token0)
-                token1_symbol = get_token_symbol(token1_address if pool_token0.lower(
-                ) == token0_address.lower() else token0_address)
+        for pair_name in pair_names:
+            token_pair = config["token_pairs"][pair_name]
+            pool_address = token_pair["pool_address"]
+            pool_type = token_pair["pool_type"]
+            token0_address = token_pair["token0_address"]
+            token1_address = token_pair["token1_address"]
 
-                if pool_type == "v2":
-                    price_token0_in_token1, price_token1_in_token0 = calculate_price_v2(
-                        contract, block_num, token0_address, token1_address)
-                else:
-                    price_token0_in_token1, price_token1_in_token0 = calculate_price_v3(
-                        contract, block_num, token0_address, token1_address)
+            contract = w3.eth.contract(
+                address=Web3.to_checksum_address(pool_address),
+                abi=POOL_V2_ABI if pool_type == "v2" else POOL_V3_ABI
+            )
 
-                logger.info(
-                    f"Pair: {pair_name}, {token0_symbol} in {token1_symbol}: {price_token0_in_token1}, "
-                    f"{token1_symbol} in {token0_symbol}: {price_token1_in_token0}"
-                )
+            pool_token0 = contract.functions.token0().call()
+            token0_symbol = get_token_symbol(pool_token0)
+            token1_symbol = get_token_symbol(
+                token1_address if pool_token0.lower() == token0_address.lower()
+                else token0_address
+            )
 
-                token_price_collection.insert_one({
-                    "block_number": block_num,
-                    "pool_address": pool_address,
-                    "pool_type": pool_type,
-                    "pair_name": pair_name,
-                    "price_token0_in_token1": float(price_token0_in_token1),
-                    "price_token1_in_token0": float(price_token1_in_token0),
-                    "token0_symbol": token0_symbol,
-                    "token1_symbol": token1_symbol,
-                    "timestamp": datetime.fromtimestamp(block["timestamp"]).strftime('%Y-%m-%d %H:%M:%S') #type: ignore
-                })
-        if to_block is None:
+            if pool_type == "v2":
+                price_token0_in_token1, price_token1_in_token0 = calculate_price_v2(
+                    contract, block_num, token0_address)
+            else:
+                price_token0_in_token1, price_token1_in_token0 = calculate_price_v3(
+                    contract, block_num, token0_address)
+
+            # Export to Prometheus
+            PRICE_GAUGE.labels(pair_name=pair_name, direction=f'{token0_symbol}_in_{token1_symbol}').set(
+                float(price_token0_in_token1))
+            PRICE_GAUGE.labels(pair_name=pair_name, direction=f'{token1_symbol}_in_{token0_symbol}').set(
+                float(price_token1_in_token0))
+
+            logger.info(
+                f"Pair: {pair_name}, {token0_symbol} in {token1_symbol}: {price_token0_in_token1}, "
+                f"{token1_symbol} in {token0_symbol}: {price_token1_in_token0}"
+            )
+
+            token_price_collection.insert_one({
+                "block_number": block_num,
+                "pool_address": pool_address,
+                "pool_type": pool_type,
+                "pair_name": pair_name,
+                "price_token0_in_token1": float(price_token0_in_token1),
+                "price_token1_in_token0": float(price_token1_in_token0),
+                "token0_symbol": token0_symbol,
+                "token1_symbol": token1_symbol,
+                "timestamp": datetime.fromtimestamp(block["timestamp"]).strftime('%Y-%m-%d %H:%M:%S') #type: ignore
+            })
+            # Compute deviation if both tokens are tracked
+            tracked_pairs = set(config["token_pairs"].keys())
+
+            for pair_a in tracked_pairs:
+                for pair_b in tracked_pairs:
+                    if pair_a >= pair_b:  # avoid duplicates (A_B and B_A)
+                        continue
+
+                    doc1 = token_price_collection.find_one(
+                        {"pair_name": pair_a, "block_number": block_num})
+                    doc2 = token_price_collection.find_one(
+                        {"pair_name": pair_b, "block_number": block_num})
+
+                    if doc1 and doc2:
+                        price1 = doc1["price_token1_in_token0"]
+                        price2 = doc2["price_token1_in_token0"]
+                        avg = (price1 + price2) / 2
+                        deviation = abs(price1 - price2) / avg * 100
+
+                        pair_label = f"{pair_a}_{pair_b}"
+                        DEVIATION_GAUGE.labels(pair=pair_label).set(deviation)
+
+                        logger.info(
+                            f"Deviation for {pair_label} at block {block_num}: {deviation:.4f}%")
+
+    if from_block is None:
+        from_block = w3.eth.block_number
+
+    if to_block is not None:
+        # CASE 1: fixed range
+        for block_num in range(from_block - 1, to_block):
+            process_block(block_num)
+        logger.info(f"Reached target block {to_block}. Monitoring complete.")
+    else:
+        # CASE 2 & 3: continuous monitoring
+        current_block = from_block
+        while True:
+            latest_block = w3.eth.block_number
+            while current_block <= latest_block:
+                process_block(current_block)
+                current_block += 1
             time.sleep(3)
 
 

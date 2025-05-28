@@ -1,7 +1,7 @@
 Price Analysis Report for ZKJ-USDT and ZKJ-USDC
 =============================================
 Block Range: 50390662 to 50393262 (2601 blocks)
-Time Range: 1970-01-01 00:00:00 to 1970-01-01 00:00:00
+Time Range: 2025-05-27 14:05:54 to 2025-05-27 15:10:54
 
 ZKJ-USDT Price: 
 - Min=0.48965800 
