@@ -1,2 +1,56 @@
+# === Python Bytecode ===
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# === Test cache ===
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+
+# === Poetry ===
+poetry.lock
+
+# === Jupyter ===
+.ipynb_checkpoints
+
+# === VSCode or other editors ===
+.vscode/
+.idea/
+
+# === System Files ===
+.DS_Store
+Thumbs.db
+
+# === Logs and Runtime ===
+*.log
+*.pid
+
+# === Docker ===
+*.tar
+docker-compose.override.yml
+
+# === Environment variables ===
+.env
+.env.*
+
+# === Virtual environments ===
+.venv/
+venv/
+ENV/
+env/
+
+# === Prometheus config or runtime ===
+prometheus.yml
+prometheus_data/
+
+# === Redis, Postgres, etc. volumes (optional if you're using volume mounts) ===
+data/
+
