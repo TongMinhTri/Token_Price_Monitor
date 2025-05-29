@@ -3,18 +3,35 @@
     "mongo_url": "mongodb://192.168.1.58:27018/",
     "database_name": "bsc_pools",
     "collection_name": "token_prices",
+    "stable_coins":["USDT", "USDC", "WBNB", "BUSD"],
     "token_pairs": {
-    "ZKJ-USDT": {
-        "pool_address": "0x5968FEACbA91D55010975E0CFe8ACfc32664ad33",
-        "pool_type": "v3",
-        "token0_address": "0xC71B5F631354BE6853eFe9C3Ab6b9590F8302e81",
-        "token1_address": "0x55d398326f99059fF775485246999027B3197955"
-    },
-    "ZKJ-USDC": {
-        "pool_address": "0x08a10Ae012dF633aBBf710ef8BD3a9745A9e5816",
-        "pool_type": "v3",
-        "token0_address": "0xC71B5F631354BE6853eFe9C3Ab6b9590F8302e81",
-        "token1_address": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"
+        "ZKJ-USDT-V3": {
+            "pool_address": "0x5968FEACbA91D55010975E0CFe8ACfc32664ad33",
+            "pool_type": "v3"
+        },
+        "ZKJ-USDT-V2": {
+            "pool_address": "0x8393C26E631eFcA7311d583D7002925346686B2C",
+            "pool_type": "v2"
+        },
+        "ZKJ-USDC-V3": {
+            "pool_address": "0x08a10Ae012dF633aBBf710ef8BD3a9745A9e5816",
+            "pool_type": "v3"
+        }, 
+        "ZKJ-WBNB-V3": {
+            "pool_address": "0x7d94b911A51670f78a44A7Af3C2Bf773C42f2497",
+            "pool_type": "v3"
+        }, 
+        "Cake-WBNB-V3": {
+            "pool_address": "0x133B3D95bAD5405d14d53473671200e9342896BF",
+            "pool_type": "v3"
+        },
+        "Cake-USDT-V3": {
+            "pool_address": "0x7f51c8AaA6B0599aBd16674e2b17FEc7a9f674A1",
+            "pool_type": "v3"
+        }, 
+        "Cake-BUSD-V3": {
+            "pool_address": "0x9f6EB6903C1277c8f02d71F8814dc9998199af1D",
+            "pool_type": "v3"
         }
     }
 }
