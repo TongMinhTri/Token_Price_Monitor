@@ -7,7 +7,8 @@ from .price_calculator import calculate_price_v2, calculate_price_v3
 from .abis import POOL_V2_ABI, POOL_V3_ABI
 from .prometheus_exporter import PRICE_GAUGE, DEVIATION_GAUGE
 
-def process_block(w3: Web3, block_num: int, config: dict, collection, logger):
+
+def process_block(w3: Web3, block_num: int, config: dict, collection, logger, filtered_pairs=None):
     try:
         block = w3.eth.get_block(block_num)
     except Exception as e:
@@ -17,6 +18,8 @@ def process_block(w3: Web3, block_num: int, config: dict, collection, logger):
     logger.info(f"Processing block {block_num}")
 
     tracked_pairs = set(config["token_pairs"].keys())
+    if filtered_pairs is not None:
+        tracked_pairs = set(filtered_pairs)
 
     prices = {}
 
@@ -48,7 +51,8 @@ def process_block(w3: Web3, block_num: int, config: dict, collection, logger):
             calculate_price_v3(contract, block_num, normal_coin_address)
 
         PRICE_GAUGE.labels(pair_name=pair_name).set(float(price))
-        logger.info(f"Pair: {pair_name}, {normal_coin} in {stable_coin}: {price}")
+        logger.info(
+            f"Pair: {pair_name}, {normal_coin} in {stable_coin}: {price}")
 
         collection.insert_one({
             "block_number": block_num,
@@ -70,5 +74,7 @@ def process_block(w3: Web3, block_num: int, config: dict, collection, logger):
             if pair_a in prices and pair_b in prices:
                 p1, p2 = prices[pair_a], prices[pair_b]
                 deviation = abs(p1 - p2) / ((p1 + p2) / 2) * 100
-                DEVIATION_GAUGE.labels(pair=f"{pair_a}_{pair_b}").set(deviation)
-                logger.info(f"Deviation for {pair_a}_{pair_b} at block {block_num}: {deviation:.4f}%")
+                DEVIATION_GAUGE.labels(
+                    pair=f"{pair_a}_{pair_b}").set(deviation)
+                logger.info(
+                    f"Deviation for {pair_a}_{pair_b} at block {block_num}: {deviation:.4f}%")

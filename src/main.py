@@ -13,7 +13,6 @@ def main():
 
     config = load_config("src/config.json")
     logger = setup_logger("price_monitor.log")
-
     try:
         monitor_token_prices(config, args.from_block,
                              args.to_block, args.pair, logger)
